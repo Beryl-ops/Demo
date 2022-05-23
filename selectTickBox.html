@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>框选checkbox</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+        }
+
+        #home {
+            min-width: 800px;
+            min-height: 900px;
+        }
+
+        #container {
+            display: inline-block;
+            position: relative;
+            top: 200px;
+            left: 300px;
+            width: 420px;
+            height: 180px;
+            border: 1px solid black;
+            overflow: hidden;
+        }
+
+        .tickBox {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            margin-right: 10px;
+            margin-top: 16px;
+        }
+
+        #container .tickBox:nth-child(6n) {
+            margin-right: 160px;
+        }
+
+        #container .tickBox:nth-child(6n+1) {
+            margin-left: 15px;
+        }
+
+        #container .tickBox:nth-child(-n+6) {
+            margin-top: 30px;
+        }
+
+        .showMask {
+            box-sizing: border-box;
+            position: absolute;
+            display: none;
+            width: 0px;
+            height: 0px;
+            border: 2px dotted black;
+            z-index: 100;
+        }
+
+        #clearAll {
+            position: absolute;
+            background-color: #fff;
+            width: 65px;
+            height: 25px;
+            border: 1px solid black;
+            top: 390px;
+            left: 656px;
+            padding: 3px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="home">
+        <div id="container">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+            <input type="checkbox" class="tickBox">
+        </div>
+        <button id="clearAll">一键清空</button>
+    </div>
+
+</body>
+<script>
+    var home = document.getElementById("home")
+    var container = document.getElementById("container")
+    var clearButton = document.getElementById("clearAll")
+    var startX, startY
+    // 记录是否触发鼠标按下事件
+    var hasMouseDown = false
+    // 取消冒泡和默认事件
+    function cancelBubbelAndDefault(e) {
+        if (e.stopPropagation) { e.stopPropagation(); }
+        else { e.cancelBubble = true; }
+        if (e.preventDefault) { e.preventDefault(); }
+        else { e.returnValue = false; }
+    }
+    // 获取滚动距离
+    function getScrollTop() {
+        var scrolltop;
+        if (document.documentElement) {
+            scrolltop = document.documentElement.scrollTop;
+        } else {
+            scrolltop = document.body.scrollTop;
+        }
+        return scrolltop;
+    }
+    function getScrollLeft() {
+        var scrollleft;
+        if (document.documentElement) {
+            scrollleft = document.documentElement.scrollLeft;
+        } else {
+            scrollleft = document.body.scrollLeft;
+        }
+        return scrollleft;
+    }
+
+    // 限制只能在container的content区域框选，返回点击的位置以container左上角为原点的水平和竖直方向的距离
+    function getX(e) {
+        var X;
+        if (e.clientX <= container.offsetLeft + container.clientLeft - getScrollLeft()) {
+            X = 0
+        } else if (e.clientX >= container.offsetLeft + container.clientLeft + container.clientWidth - getScrollLeft()) {
+            X = container.clientWidth
+        } else {
+            X = e.clientX - container.offsetLeft - container.clientLeft + getScrollLeft()
+        }
+        return X
+    }
+    function getY(e) {
+        var Y
+        if (e.clientY <= container.offsetTop + container.clientTop - getScrollTop()) {
+            Y = 0
+        } else if (e.clientY >= container.offsetTop + container.clientTop + container.clientHeight - getScrollTop()) {
+            Y = container.clientHeight
+        } else {
+            Y = e.clientY - container.offsetTop - container.clientTop + getScrollTop()
+        }
+        return Y
+    }
+    // 点击清空所有勾选的按钮
+    clearButton.addEventListener('click', function (e) {
+        cancelBubbelAndDefault(e)
+        var checkbox = document.querySelectorAll('.tickBox');
+        for (var i = 0; i < checkbox.length; i++) {
+            checkbox[i].checked = false
+        }
+    })
+    // 鼠标按下：绘制一个框选mask，不显示
+    function mouseDownEvent(e) {
+        // 判断是否左键按下
+        if (e.button !== 0) return
+        cancelBubbelAndDefault(e)
+        hasMouseDown = true
+        startX = getX(e)
+        startY = getY(e)
+        var mask = document.createElement("div")
+        mask.className = "showMask"
+        mask.id = "mask"
+        mask.style.left = startX + 'px';
+        mask.style.top = startY + 'px';
+        container.appendChild(mask)
+    }
+    // 鼠标移动：根据当前鼠标所在位置和初始鼠标按下的位置修改mask样式
+    function mouseMoveEvent(e) {
+        // 不断改变样式，引起回流重绘，设置定时器使其每50ms触发一次
+        setTimeout(() => {  
+            cancelBubbelAndDefault(e)
+            // 如果没有触发按下鼠标事件，也不触发此事件
+            if (!hasMouseDown) return;
+            var mask = document.getElementById("mask");
+            // 获取鼠标当前所在的位置，修改mask的宽高以及距离
+            var endX = getX(e), endY = getY(e);
+            mask.style.left = Math.min(startX, endX) + 'px';
+            mask.style.top = Math.min(startY, endY) + 'px';
+            mask.style.width = Math.abs(endX - startX) + 'px';
+            mask.style.height = Math.abs(endY - startY) + 'px';
+            // 显示mask
+            mask.style.display = "block";
+        }, 50);
+
+    }
+    // 鼠标弹起：隐藏mask，并判断在mask中的勾选框进行勾选
+    function mouseUpEvent(e) {
+        cancelBubbelAndDefault(e);
+        if (!hasMouseDown) return;
+        var mask = document.getElementById("mask");
+        var checkbox = document.querySelectorAll('.tickBox');
+        // 判断哪些勾选框在Mask中，遍历每个勾选框，判断其边界值
+        for (var i = 0; i < checkbox.length; i++) {
+            // 获取tickBox的和mask的上下左右边界值
+            var tickLeft = checkbox[i].offsetLeft, tickRight = checkbox[i].offsetLeft + checkbox[i].offsetWidth
+            var tickTop = checkbox[i].offsetTop, tickBottom = checkbox[i].offsetTop + checkbox[i].offsetHeight
+            var maskLeft = mask.offsetLeft, maskRight = mask.offsetLeft + mask.offsetWidth
+            var maskTop = mask.offsetTop, maskBottom = mask.offsetTop + mask.offsetHeight
+            // 考虑小盒子不是全部在mask中的情况，只有局部在也要勾选
+            if ((tickLeft < maskRight && tickRight > maskLeft) && (tickTop < maskBottom && tickBottom > maskTop)) {
+                checkbox[i].checked = true
+            }
+        }
+        mask.style.display = 'none';
+        // 弹起之后，让值等于false，否则还会触发移动事件
+        hasMouseDown = false;
+    }
+    document.body.addEventListener('mousedown', mouseDownEvent)
+    document.body.addEventListener('mousemove', mouseMoveEvent)
+    document.body.addEventListener('mouseup', mouseUpEvent)
+</script>
+
+</html>
